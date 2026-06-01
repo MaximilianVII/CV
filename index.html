@@ -129,6 +129,29 @@
     pointer-events: none;
   }
 
+  /* ============ NIGHT CITY (sides) ============ */
+  .bg-city {
+    position: fixed;
+    bottom: 0;
+    width: 22vw;
+    max-width: 280px;
+    min-width: 160px;
+    height: 92vh;
+    max-height: 820px;
+    z-index: -2;
+    pointer-events: none;
+    filter: drop-shadow(0 0 10px rgba(255,43,214,0.35));
+  }
+  .bg-city.left { left: 0; }
+  .bg-city.right { right: 0; transform: scaleX(-1); }
+  .bg-city svg { width: 100%; height: 100%; display: block; }
+  @media (max-width: 900px) {
+    .bg-city { width: 18vw; opacity: 0.6; max-width: 180px; min-width: 120px; }
+  }
+  @media (max-width: 600px) {
+    .bg-city { display: none; }
+  }
+
   /* ============ TOP BAR ============ */
   .topbar {
     position: fixed; top: 0; left: 0; right: 0;
@@ -677,6 +700,8 @@
 <div class="bg-stars"></div>
 <div class="bg-sun"></div>
 <div class="bg-grid"></div>
+<div class="bg-city left" id="city-left"></div>
+<div class="bg-city right" id="city-right"></div>
 <div class="bg-vignette"></div>
 <div class="bg-scanlines"></div>
 
@@ -707,7 +732,7 @@
         <span class="ico">✉</span>
         <div><div class="label" data-en="Email" data-ua="Пошта">Email</div><div class="value">makslao@gmail.com</div></div>
       </a>
-      <a class="contact-card" href="tel:+380937000083">
+      <a class="contact-card" href="tel:+380937700083">
         <span class="ico">☎</span>
         <div><div class="label" data-en="Phone" data-ua="Телефон">Phone</div><div class="value">+380 93 700 00 83</div></div>
       </a>
@@ -715,9 +740,9 @@
         <span class="ico">in</span>
         <div><div class="label">LinkedIn</div><div class="value">/maksym-deinychenko</div></div>
       </a>
-      <a class="contact-card" href="https://steamcommunity.com/profiles" target="_blank" rel="noopener">
+      <a class="contact-card" href="https://steamcommunity.com/profiles/76561198015331495/" target="_blank" rel="noopener">
         <span class="ico">🎮</span>
-        <div><div class="label">Steam</div><div class="value">/profiles</div></div>
+        <div><div class="label">Steam</div><div class="value">/MaximilianVII</div></div>
       </a>
     </div>
   </section>
@@ -1196,9 +1221,119 @@
     applyLang(next);
   });
 
+  // ====== NIGHT CITY GENERATOR ======
+  function generateCityscape() {
+    const W = 220, H = 720;
+    const rnd = (min, max) => min + Math.random() * (max - min);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">`;
+
+    // distant haze gradient
+    svg += `<defs>
+      <linearGradient id="haze${Math.floor(rnd(0,99999))}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(157,0,255,0)"/>
+        <stop offset="100%" stop-color="rgba(255,43,214,0.15)"/>
+      </linearGradient>
+    </defs>`;
+
+    // Buildings — back to front layers
+    const layers = [
+      // far layer
+      [
+        { x: rnd(-5, 5),   w: rnd(35, 45), top: rnd(150, 200), stroke: '#9d00ff', wColor: '#00fff9', opacity: 0.45 },
+        { x: rnd(40, 55),  w: rnd(38, 50), top: rnd(140, 180), stroke: '#9d00ff', wColor: '#ff2bd6', opacity: 0.5 },
+        { x: rnd(90, 105), w: rnd(40, 55), top: rnd(110, 160), stroke: '#9d00ff', wColor: '#ffd400', opacity: 0.5, antenna: true },
+        { x: rnd(140, 155),w: rnd(38, 50), top: rnd(130, 180), stroke: '#9d00ff', wColor: '#00fff9', opacity: 0.45 },
+        { x: rnd(180, 195),w: rnd(30, 40), top: rnd(150, 190), stroke: '#9d00ff', wColor: '#ff10a0', opacity: 0.5 },
+      ],
+      // mid layer
+      [
+        { x: rnd(15, 25),  w: rnd(70, 85), top: rnd(220, 260), stroke: '#ff2bd6', wColor: '#00fff9', opacity: 0.85, antenna: true },
+        { x: rnd(105, 120),w: rnd(65, 80), top: rnd(200, 240), stroke: '#ff2bd6', wColor: '#ff10a0', opacity: 0.85, antenna: true, billboard: true },
+      ],
+      // front layer
+      [
+        { x: rnd(-5, 5),   w: rnd(50, 65), top: rnd(360, 400), stroke: '#00fff9', wColor: '#ffd400', opacity: 1 },
+        { x: rnd(60, 75),  w: rnd(50, 65), top: rnd(380, 420), stroke: '#00fff9', wColor: '#ff2bd6', opacity: 1, sign: true },
+        { x: rnd(125, 140),w: rnd(60, 75), top: rnd(330, 380), stroke: '#00fff9', wColor: '#00fff9', opacity: 1, antenna: true },
+      ]
+    ];
+
+    layers.forEach(layer => {
+      layer.forEach(b => {
+        svg += `<g opacity="${b.opacity.toFixed(2)}">`;
+        // building body
+        svg += `<rect x="${b.x.toFixed(1)}" y="${b.top.toFixed(1)}" width="${b.w.toFixed(1)}" height="${(H - b.top).toFixed(1)}" fill="#08031a" stroke="${b.stroke}" stroke-width="1"/>`;
+        // windows
+        for (let y = b.top + 12; y < H - 25; y += 12) {
+          for (let x = b.x + 4; x < b.x + b.w - 4; x += 7) {
+            if (Math.random() > 0.45) {
+              const o = (0.35 + Math.random() * 0.55).toFixed(2);
+              if (Math.random() < 0.06) {
+                // blinking window
+                const dur = (1.5 + Math.random() * 3.5).toFixed(1);
+                svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="2.5" height="4" fill="${b.wColor}"><animate attributeName="opacity" values="${o};0.05;${o}" dur="${dur}s" repeatCount="indefinite"/></rect>`;
+              } else {
+                svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="2.5" height="4" fill="${b.wColor}" opacity="${o}"/>`;
+              }
+            }
+          }
+        }
+        // antenna with blinking red light
+        if (b.antenna) {
+          const ax = b.x + b.w / 2;
+          const ah = rnd(22, 38);
+          svg += `<line x1="${ax.toFixed(1)}" y1="${b.top.toFixed(1)}" x2="${ax.toFixed(1)}" y2="${(b.top - ah).toFixed(1)}" stroke="${b.stroke}" stroke-width="1.2"/>`;
+          svg += `<circle cx="${ax.toFixed(1)}" cy="${(b.top - ah - 2).toFixed(1)}" r="2" fill="#ff2244"><animate attributeName="opacity" values="1;0.1;1" dur="${(0.7 + Math.random() * 1.3).toFixed(1)}s" repeatCount="indefinite"/></circle>`;
+        }
+        // billboard
+        if (b.billboard) {
+          const bx = b.x + 5, by = b.top + 30;
+          const bw = b.w - 10;
+          svg += `<g>
+            <rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="22" fill="rgba(255,212,0,0.1)" stroke="#ffd400" stroke-width="1"/>
+            <text x="${(bx + bw/2).toFixed(1)}" y="${(by + 16).toFixed(1)}" text-anchor="middle" fill="#ffd400" font-family="monospace" font-size="11" letter-spacing="2" font-weight="bold">CYBER</text>
+            <animate attributeName="opacity" values="1;0.55;1;0.3;1" dur="3.2s" repeatCount="indefinite"/>
+          </g>`;
+        }
+        // small neon sign
+        if (b.sign) {
+          const sx = b.x + 4, sy = b.top + 55;
+          const sw = b.w - 8;
+          svg += `<g>
+            <rect x="${sx.toFixed(1)}" y="${sy.toFixed(1)}" width="${sw.toFixed(1)}" height="14" fill="rgba(255,43,214,0.1)" stroke="#ff2bd6" stroke-width="0.8"/>
+            <text x="${(sx + sw/2).toFixed(1)}" y="${(sy + 10).toFixed(1)}" text-anchor="middle" fill="#ff2bd6" font-family="monospace" font-size="7" letter-spacing="1.5">OPEN 24/7</text>
+          </g>`;
+        }
+        svg += `</g>`;
+      });
+    });
+
+    // flying drone / hovercar (animated)
+    const droneY = rnd(80, 180);
+    svg += `<g>
+      <circle cx="0" cy="${droneY}" r="2" fill="#ffd400">
+        <animate attributeName="cx" from="-20" to="${W + 20}" dur="${(8 + Math.random() * 4).toFixed(1)}s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="0" cy="${droneY}" r="4" fill="rgba(255,212,0,0.3)">
+        <animate attributeName="cx" from="-20" to="${W + 20}" dur="${(8 + Math.random() * 4).toFixed(1)}s" repeatCount="indefinite"/>
+      </circle>
+    </g>`;
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function renderCities() {
+    const left = document.getElementById('city-left');
+    const right = document.getElementById('city-right');
+    if (left) left.innerHTML = generateCityscape();
+    if (right) right.innerHTML = generateCityscape();
+  }
+
   // ====== BOOT ======
   document.addEventListener('DOMContentLoaded', () => {
     renderSkills();
+    renderCities();
     initReveal();
     initParallax();
     initMouseTilt();
